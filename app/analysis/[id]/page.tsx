@@ -372,4 +372,3 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
     </Container>
   )
 }
-

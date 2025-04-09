@@ -136,4 +136,3 @@ function PlayerCard({ index, position }: { index: number; position?: string }) {
     </Card>
   )
 }
-

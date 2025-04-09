@@ -1,167 +1,160 @@
+"use client"
+
+import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { ArrowRight, BarChart2, Upload, Video } from "lucide-react"
 import { Container } from "@/components/layout/container"
+import { Video, ArrowRight } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
 
-export default function Home() {
+export default function LandingPage() {
+  const [activeButton, setActiveButton] = useState<"club" | "player" | null>(null)
+
   return (
     <div className="flex flex-col min-h-screen">
       <header className="border-b">
         <Container className="flex h-16 items-center justify-between">
           <div className="flex items-center gap-2 font-bold text-xl">
             <Video className="h-6 w-6 text-green-600" />
-            <span>CodeStrikers' Scouting AI</span>
+            <span>ScoutVision AI</span>
           </div>
           <nav className="hidden md:flex items-center gap-6">
-            <Link href="/" className="font-medium">
-              Home
+            <Link href="/about" className="font-medium">
+              About Us
             </Link>
-            <Link href="/dashboard" className="font-medium">
-              Dashboard
+            <Link href="/features" className="font-medium">
+              Features
             </Link>
-            <Link href="/upload" className="font-medium">
-              Upload
-            </Link>
-            <Link href="/players" className="font-medium">
-              Players
+            <Link href="/pricing" className="font-medium">
+              Pricing
             </Link>
           </nav>
-          <div className="flex items-center gap-4">
-            <Link href="/login">
-              <Button variant="outline">Log in</Button>
-            </Link>
-            <Link href="/signup">
-              <Button>Sign up</Button>
-            </Link>
-          </div>
         </Container>
       </header>
-      <main className="flex-1">
-        <section className="py-20 md:py-32 bg-gradient-to-b from-green-50 to-white">
-          <Container>
-            <div className="grid gap-6 lg:grid-cols-2 lg:gap-12 items-center">
-              <div className="flex flex-col justify-center space-y-4">
-                <div className="space-y-2">
-                  <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none">
-                    AI-Powered Football Talent Scouting
-                  </h1>
-                  <p className="max-w-[600px] text-gray-500 md:text-xl">
-                    Discover the next generation of football stars with our advanced computer vision and AI analytics
-                    platform.
-                  </p>
-                </div>
-                <div className="flex flex-col gap-2 min-[400px]:flex-row">
-                  <Link href="/upload">
-                    <Button size="lg" className="gap-1.5">
-                      Upload Footage <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </Link>
-                  <Link href="/demo">
-                    <Button size="lg" variant="outline">
-                      Watch Demo
-                    </Button>
-                  </Link>
-                </div>
+
+      <main className="flex-1 flex items-center justify-center">
+        <Container className="py-20 md:py-32">
+          <div className="max-w-3xl mx-auto text-center">
+            <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl mb-6">
+              Football Talent Scouting <span className="text-green-600">Reimagined</span>
+            </h1>
+            <p className="text-xl text-gray-600 mb-12 max-w-2xl mx-auto">
+              Advanced AI-powered analysis for players and clubs. Discover talent and improve performance with
+              data-driven insights.
+            </p>
+
+            <div className="flex flex-col md:flex-row gap-6 justify-center mb-8">
+              <div className="w-full md:w-64">
+                <Button
+                  variant={activeButton === "club" ? "default" : "outline"}
+                  className={`w-full text-lg py-6 ${activeButton === "club" ? "bg-green-600 hover:bg-green-700" : ""}`}
+                  onClick={() => setActiveButton(activeButton === "club" ? null : "club")}
+                >
+                  I'm a Club
+                </Button>
+
+                <AnimatePresence>
+                  {activeButton === "club" && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="bg-white border border-t-0 rounded-b-lg p-4 shadow-sm space-y-3">
+                        <p className="text-sm text-gray-600 mb-2">
+                          Scout new talent, analyze player performance, and make data-driven recruitment decisions.
+                        </p>
+                        <Link href="/auth/club/login">
+                          <Button className="w-full" size="sm">
+                            Login
+                          </Button>
+                        </Link>
+                        <Link href="/auth/club/signup">
+                          <Button variant="outline" className="w-full" size="sm">
+                            Sign Up
+                          </Button>
+                        </Link>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
-              <img
-                src="/placeholder.svg?height=550&width=750"
-                alt="Football player analysis visualization"
-                className="mx-auto aspect-video overflow-hidden rounded-xl object-cover object-center sm:w-full lg:order-last"
-                width={550}
-                height={310}
-              />
-            </div>
-          </Container>
-        </section>
-        <section className="py-12 md:py-24 bg-white">
-          <Container>
-            <div className="flex flex-col items-center justify-center space-y-4 text-center">
-              <div className="space-y-2">
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">How It Works</h2>
-                <p className="max-w-[900px] text-gray-500 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Our platform uses advanced computer vision to analyze player movements, skills, and performance
-                  metrics.
-                </p>
-              </div>
-            </div>
-            <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-3 md:gap-12 pt-12">
-              <div className="flex flex-col items-center space-y-2 border rounded-lg p-6 shadow-sm">
-                <Upload className="h-12 w-12 text-green-600" />
-                <h3 className="text-xl font-bold">Upload Footage</h3>
-                <p className="text-sm text-gray-500 text-center">
-                  Upload match or training videos to our secure platform.
-                </p>
-              </div>
-              <div className="flex flex-col items-center space-y-2 border rounded-lg p-6 shadow-sm">
-                <Video className="h-12 w-12 text-green-600" />
-                <h3 className="text-xl font-bold">AI Analysis</h3>
-                <p className="text-sm text-gray-500 text-center">
-                  Our AI analyzes player movements, positioning, and technical skills.
-                </p>
-              </div>
-              <div className="flex flex-col items-center space-y-2 border rounded-lg p-6 shadow-sm">
-                <BarChart2 className="h-12 w-12 text-green-600" />
-                <h3 className="text-xl font-bold">Get Insights</h3>
-                <p className="text-sm text-gray-500 text-center">
-                  Receive detailed reports and metrics on player performance and potential.
-                </p>
-              </div>
-            </div>
-          </Container>
-        </section>
-        <section className="py-12 md:py-24 bg-gray-50">
-          <Container>
-            <div className="flex flex-col items-center justify-center space-y-4 text-center">
-              <div className="space-y-2">
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">Key Features</h2>
-                <p className="max-w-[900px] text-gray-500 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Our platform provides comprehensive tools for football talent scouting.
-                </p>
-              </div>
-            </div>
-            <div className="mx-auto grid max-w-5xl grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3 pt-12">
-              <div className="flex flex-col space-y-2">
-                <h3 className="text-xl font-bold">Player Tracking</h3>
-                <p className="text-gray-500">Track player movements, positioning, and spatial awareness.</p>
-              </div>
-              <div className="flex flex-col space-y-2">
-                <h3 className="text-xl font-bold">Skill Analysis</h3>
-                <p className="text-gray-500">Analyze technical skills like passing, shooting, and dribbling.</p>
-              </div>
-              <div className="flex flex-col space-y-2">
-                <h3 className="text-xl font-bold">Physical Metrics</h3>
-                <p className="text-gray-500">Measure speed, acceleration, stamina, and physical attributes.</p>
-              </div>
-              <div className="flex flex-col space-y-2">
-                <h3 className="text-xl font-bold">Tactical Understanding</h3>
-                <p className="text-gray-500">Evaluate decision-making and tactical awareness during matches.</p>
-              </div>
-              <div className="flex flex-col space-y-2">
-                <h3 className="text-xl font-bold">Comparison Tools</h3>
-                <p className="text-gray-500">Compare players against benchmarks or professional standards.</p>
-              </div>
-              <div className="flex flex-col space-y-2">
-                <h3 className="text-xl font-bold">Scouting Reports</h3>
-                <p className="text-gray-500">Generate comprehensive scouting reports with AI-powered insights.</p>
+
+              <div className="w-full md:w-64">
+                <Button
+                  variant={activeButton === "player" ? "default" : "outline"}
+                  className={`w-full text-lg py-6 ${
+                    activeButton === "player" ? "bg-green-600 hover:bg-green-700" : ""
+                  }`}
+                  onClick={() => setActiveButton(activeButton === "player" ? null : "player")}
+                >
+                  I'm a Player
+                </Button>
+
+                <AnimatePresence>
+                  {activeButton === "player" && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="bg-white border border-t-0 rounded-b-lg p-4 shadow-sm space-y-3">
+                        <p className="text-sm text-gray-600 mb-2">
+                          Track your performance, showcase your skills, and get discovered by top clubs.
+                        </p>
+                        <Link href="/auth/player">
+                          <Button className="w-full" size="sm">
+                            Enter with Code
+                          </Button>
+                        </Link>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
-          </Container>
-        </section>
+
+            <div className="mt-16">
+              <h2 className="text-2xl font-bold mb-4">Trusted by clubs and players worldwide</h2>
+              <div className="flex flex-wrap justify-center gap-8 opacity-70">
+                <div className="h-12 w-24 bg-gray-200 rounded flex items-center justify-center">Logo 1</div>
+                <div className="h-12 w-24 bg-gray-200 rounded flex items-center justify-center">Logo 2</div>
+                <div className="h-12 w-24 bg-gray-200 rounded flex items-center justify-center">Logo 3</div>
+                <div className="h-12 w-24 bg-gray-200 rounded flex items-center justify-center">Logo 4</div>
+                <div className="h-12 w-24 bg-gray-200 rounded flex items-center justify-center">Logo 5</div>
+              </div>
+            </div>
+
+            <div className="mt-20">
+              <Link href="/features">
+                <Button variant="link" className="text-green-600 text-lg group">
+                  Explore our features
+                  <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </Container>
       </main>
+
       <footer className="border-t py-6 md:py-8">
         <Container className="flex flex-col items-center justify-center gap-4 md:flex-row md:gap-8">
           <p className="text-center text-sm leading-loose text-gray-500 md:text-left">
             © 2025 ScoutVision AI. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
+            <Link href="/about" className="text-sm text-gray-500 hover:underline">
+              About
+            </Link>
             <Link href="/terms" className="text-sm text-gray-500 hover:underline">
               Terms
             </Link>
             <Link href="/privacy" className="text-sm text-gray-500 hover:underline">
               Privacy
-            </Link>
-            <Link href="/contact" className="text-sm text-gray-500 hover:underline">
-              Contact
             </Link>
           </div>
         </Container>
@@ -169,4 +162,3 @@ export default function Home() {
     </div>
   )
 }
-
