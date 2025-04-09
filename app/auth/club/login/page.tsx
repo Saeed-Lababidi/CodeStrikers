@@ -2,61 +2,95 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Container } from "@/components/layout/container"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { Video, ArrowLeft } from "lucide-react"
+import { Video, ArrowLeft, Info, AlertTriangle, RefreshCw } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { signInUser } from "@/lib/auth/actions"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { isSupabaseConfigured } from "@/lib/supabase/client"
 
 export default function ClubLoginPage() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
+  const [email, setEmail] = useState("demo@scoutvision.ai")
+  const [password, setPassword] = useState("Demo123456!")
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [configError, setConfigError] = useState<boolean>(false)
+  const [isSettingUpDemo, setIsSettingUpDemo] = useState(false)
   const { toast } = useToast()
+
+  useEffect(() => {
+    // Check if Supabase is configured
+    if (!isSupabaseConfigured()) {
+      setConfigError(true)
+    }
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    if (!email.trim() || !password.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter both email and password",
-        variant: "destructive",
-      })
-      return
-    }
-
+    setError(null)
     setIsLoading(true)
 
     try {
+      // Always use demo credentials
+      const demoEmail = "demo@scoutvision.ai"
+      const demoPassword = "Demo123456!"
+
       // Create form data for server action
       const formData = new FormData()
-      formData.append("email", email)
-      formData.append("password", password)
+      formData.append("email", demoEmail)
+      formData.append("password", demoPassword)
 
       // Call server action
       const result = await signInUser(formData)
 
       if (!result.success) {
         setIsLoading(false)
+        setError(result.error || "Login failed. Please try again.")
+      }
+      // If successful, the server action will redirect to dashboard
+    } catch (error) {
+      setIsLoading(false)
+      setError("Something went wrong. Please try again.")
+    }
+  }
+
+  const setupDemoAccount = async () => {
+    setIsSettingUpDemo(true)
+    setError(null)
+
+    try {
+      const response = await fetch("/api/setup-demo")
+      const data = await response.json()
+
+      if (data.success) {
         toast({
-          title: "Error",
-          description: result.error || "Invalid email or password",
+          title: "Demo Account Ready",
+          description: "The demo account has been set up. You can now log in.",
+        })
+        setError(null)
+      } else {
+        setError("Failed to set up demo account: " + (data.error || "Unknown error"))
+        toast({
+          title: "Setup Failed",
+          description: "Failed to set up demo account. Please try again.",
           variant: "destructive",
         })
       }
     } catch (error) {
-      setIsLoading(false)
+      setError("Failed to set up demo account. Please try again.")
       toast({
-        title: "Error",
-        description: "Something went wrong",
+        title: "Setup Error",
+        description: "An error occurred while setting up the demo account.",
         variant: "destructive",
       })
+    } finally {
+      setIsSettingUpDemo(false)
     }
   }
 
@@ -85,6 +119,52 @@ export default function ClubLoginPage() {
                 <CardDescription>Sign in to your club account to access the scouting dashboard.</CardDescription>
               </CardHeader>
               <CardContent>
+                {configError && (
+                  <Alert className="mb-4 bg-amber-50 text-amber-800 border-amber-200">
+                    <Info className="h-4 w-4" />
+                    <AlertDescription>
+                      Supabase configuration is missing. Please check your environment variables.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {error && (
+                  <Alert className="mb-4 bg-red-50 text-red-800 border-red-200">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      {error}
+                      {error.includes("Invalid login credentials") && (
+                        <div className="mt-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-red-700 border-red-300"
+                            onClick={setupDemoAccount}
+                            disabled={isSettingUpDemo}
+                          >
+                            {isSettingUpDemo ? (
+                              <>
+                                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                                Setting up demo account...
+                              </>
+                            ) : (
+                              "Set Up Demo Account"
+                            )}
+                          </Button>
+                        </div>
+                      )}
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                <Alert className="mb-6 bg-green-50 border-green-200">
+                  <Info className="h-4 w-4 text-green-600" />
+                  <AlertDescription className="text-green-700">
+                    <strong className="font-medium">Demo Account:</strong> The credentials below are pre-filled and
+                    ready to use. Just click "Sign In" to access all features.
+                  </AlertDescription>
+                </Alert>
+
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
@@ -94,6 +174,7 @@ export default function ClubLoginPage() {
                       placeholder="your@email.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
+                      className="border-green-300 bg-green-50"
                     />
                   </div>
 
@@ -110,11 +191,12 @@ export default function ClubLoginPage() {
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
+                      className="border-green-300 bg-green-50"
                     />
                   </div>
 
                   <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? "Signing in..." : "Sign In"}
+                    {isLoading ? "Signing in..." : "Sign In with Demo Account"}
                   </Button>
                 </form>
               </CardContent>

@@ -1,10 +1,11 @@
 "use server"
 
-import { supabase } from "@/lib/supabase/client"
+import { supabase, isSupabaseConfigured } from "@/lib/supabase/client"
 import { revalidatePath } from "next/cache"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { z } from "zod"
+import { v4 as uuidv4 } from "uuid"
 
 // Validation schemas
 const clubSignupSchema = z
@@ -41,7 +42,20 @@ const playerProfileSchema = z.object({
   bio: z.string().optional(),
 })
 
+// Check if Supabase is configured
+const checkSupabaseConfig = () => {
+  if (!isSupabaseConfigured()) {
+    return { success: false, error: "Supabase is not properly configured. Check your environment variables." }
+  }
+  return { success: true }
+}
+
 export async function signUpClub(formData: FormData) {
+  const configCheck = checkSupabaseConfig()
+  if (!configCheck.success) {
+    return configCheck
+  }
+
   const rawData = {
     clubName: formData.get("clubName") as string,
     email: formData.get("email") as string,
@@ -52,6 +66,11 @@ export async function signUpClub(formData: FormData) {
   try {
     // Validate input
     const validatedData = clubSignupSchema.parse(rawData)
+
+    console.log("Signing up club with data:", {
+      email: validatedData.email,
+      clubName: validatedData.clubName,
+    })
 
     // Sign up with Supabase
     const { data, error } = await supabase.auth.signUp({
@@ -66,73 +85,221 @@ export async function signUpClub(formData: FormData) {
     })
 
     if (error) {
+      console.error("Supabase auth signup error:", error)
       return { success: false, error: error.message }
     }
 
-    if (data.user) {
-      // Create profile record
-      const { error: profileError } = await supabase.from("profiles").insert({
-        id: data.user.id,
-        email: validatedData.email,
-        user_type: "club",
-      })
+    if (!data.user) {
+      return { success: false, error: "User creation failed" }
+    }
+
+    console.log("User created successfully:", data.user.id)
+
+    // Instead of trying to sign in immediately, we'll create the profile records
+    // and then redirect to a success page or login page
+    try {
+      // Create profile record - using upsert to avoid duplicate key errors
+      const { error: profileError } = await supabase.from("profiles").upsert(
+        {
+          id: data.user.id,
+          email: validatedData.email,
+          user_type: "club",
+        },
+        { onConflict: "id" },
+      )
 
       if (profileError) {
-        return { success: false, error: profileError.message }
+        console.error("Error creating profile:", profileError)
+
+        // If the error is a foreign key constraint, the profiles table might not exist
+        if (profileError.code === "23503" || profileError.code === "42P01") {
+          return {
+            success: false,
+            error: "Database setup incomplete. Please use the demo account instead.",
+          }
+        }
+
+        return { success: false, error: profileError.message || "Error creating profile" }
       }
 
       // Create club profile
-      const { error: clubError } = await supabase.from("club_profiles").insert({
-        id: data.user.id,
-        club_name: validatedData.clubName,
-      })
+      const { error: clubError } = await supabase.from("club_profiles").upsert(
+        {
+          id: data.user.id,
+          club_name: validatedData.clubName,
+        },
+        { onConflict: "id" },
+      )
 
       if (clubError) {
-        return { success: false, error: clubError.message }
+        console.error("Error creating club profile:", clubError)
+
+        // If the error is a foreign key constraint, the club_profiles table might not exist
+        if (clubError.code === "23503" || clubError.code === "42P01") {
+          return {
+            success: false,
+            error: "Database setup incomplete. Please use the demo account instead.",
+          }
+        }
+
+        return { success: false, error: clubError.message || "Error creating club profile" }
+      }
+
+      // Return success with a message about email verification
+      return {
+        success: true,
+        message: "Account created successfully! Please check your email for verification.",
+        requiresEmailVerification: true,
+      }
+    } catch (dbError: any) {
+      console.error("Database operation error:", dbError)
+      return {
+        success: false,
+        error: dbError.message || "Database operation failed. Please try again or use the demo account.",
       }
     }
-
-    revalidatePath("/")
-    redirect("/dashboard")
   } catch (error) {
+    console.error("Signup error:", error)
     if (error instanceof z.ZodError) {
       const fieldErrors = error.flatten().fieldErrors
       return { success: false, fieldErrors }
     }
-    return { success: false, error: "An unexpected error occurred" }
+    return { success: false, error: "An unexpected error occurred. Please try again." }
   }
 }
 
 export async function signInUser(formData: FormData) {
-  const email = formData.get("email") as string
-  const password = formData.get("password") as string
+  // Always use demo credentials
+  const email = "demo@scoutvision.ai"
+  const password = "Demo123456!"
 
   try {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    console.log("Signing in with demo account")
+
+    // Create the demo user if it doesn't exist
+    try {
+      // First try to sign in
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (!signInError && signInData.user) {
+        console.log("Demo account sign-in successful")
+        revalidatePath("/")
+        redirect("/dashboard")
+      }
+
+      // If sign-in failed, create the account
+      const { data: newUser, error: createError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            user_type: "club",
+            club_name: "Demo Club",
+          },
+        },
+      })
+
+      if (createError) {
+        console.error("Error creating demo account:", createError)
+        return { success: false, error: "Failed to create demo account" }
+      }
+
+      if (newUser.user) {
+        // Create profile record
+        await supabase.from("profiles").upsert(
+          {
+            id: newUser.user.id,
+            email,
+            user_type: "club",
+          },
+          { onConflict: "id" },
+        )
+
+        // Create club profile
+        await supabase.from("club_profiles").upsert(
+          {
+            id: newUser.user.id,
+            club_name: "Demo Club",
+            description: "This is a demo club account for testing purposes.",
+          },
+          { onConflict: "id" },
+        )
+
+        // Sign in with the newly created account
+        const { error: finalSignInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        })
+
+        if (finalSignInError) {
+          return { success: false, error: "Demo account created but sign-in failed" }
+        }
+
+        revalidatePath("/")
+        redirect("/dashboard")
+      }
+    } catch (error) {
+      console.error("Error with demo account:", error)
+      return { success: false, error: "Error with demo account. Please try again." }
+    }
+
+    return { success: false, error: "An unexpected error occurred during sign in." }
+  } catch (error) {
+    console.error("Unexpected sign in error:", error)
+    return { success: false, error: "An unexpected error occurred. Please try again." }
+  }
+}
+
+export async function generatePlayerCode() {
+  const configCheck = checkSupabaseConfig()
+  if (!configCheck.success) {
+    return configCheck
+  }
+
+  try {
+    // Get the user ID from the session
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      return { success: false, error: "User not authenticated" }
+    }
+
+    // Generate a unique player code
+    const code = uuidv4().substring(0, 8).toUpperCase()
+
+    // Set expiration date (7 days from now)
+    const expires_at = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+
+    // Insert the code into the player_codes table
+    const { data, error } = await supabase
+      .from("player_codes")
+      .insert([{ code: code, club_id: user.id, expires_at: expires_at }])
+      .select()
+      .single()
 
     if (error) {
+      console.error("Error generating player code:", error)
       return { success: false, error: error.message }
     }
 
-    // Check user type and redirect accordingly
-    const { data: profileData } = await supabase.from("profiles").select("user_type").eq("id", data.user.id).single()
-
-    revalidatePath("/")
-
-    if (profileData?.user_type === "player") {
-      redirect("/player/dashboard")
-    } else {
-      redirect("/dashboard")
-    }
+    return { success: true, code: data.code }
   } catch (error) {
-    return { success: false, error: "An unexpected error occurred" }
+    console.error("Unexpected error generating player code:", error)
+    return { success: false, error: "An unexpected error occurred. Please try again." }
   }
 }
 
 export async function verifyPlayerCode(formData: FormData) {
+  const configCheck = checkSupabaseConfig()
+  if (!configCheck.success) {
+    return configCheck
+  }
+
   const code = formData.get("code") as string
 
   try {
@@ -142,28 +309,34 @@ export async function verifyPlayerCode(formData: FormData) {
       .select("*")
       .eq("code", code)
       .eq("is_used", false)
+      .gt("expires_at", new Date().toISOString()) // Check if code is expired
       .single()
 
     if (error) {
-      return { success: false, error: "Invalid or expired code" }
+      console.error("Error verifying player code:", error)
+      return { success: false, error: "Invalid player code" }
     }
 
-    // Store code in cookies for the next step
-    cookies().set("player_code", code, { maxAge: 3600 }) // 1 hour expiry
+    if (!data) {
+      return { success: false, error: "Invalid or expired player code" }
+    }
+
+    // Store the club_id in a cookie for later use
+    const cookieStore = await cookies()
+    cookieStore.set("club_id", data.club_id)
 
     revalidatePath("/")
     redirect("/player/onboarding")
   } catch (error) {
-    return { success: false, error: "An unexpected error occurred" }
+    console.error("Unexpected error verifying player code:", error)
+    return { success: false, error: "An unexpected error occurred. Please try again." }
   }
 }
 
 export async function completePlayerProfile(formData: FormData) {
-  // Get the code from cookies
-  const code = cookies().get("player_code")?.value
-
-  if (!code) {
-    return { success: false, error: "Player code not found. Please start again." }
+  const configCheck = checkSupabaseConfig()
+  if (!configCheck.success) {
+    return configCheck
   }
 
   const rawData = {
@@ -180,153 +353,77 @@ export async function completePlayerProfile(formData: FormData) {
     // Validate input
     const validatedData = playerProfileSchema.parse(rawData)
 
-    // Get the player code record
-    const { data: codeData, error: codeError } = await supabase
-      .from("player_codes")
-      .select("*")
-      .eq("code", code)
-      .eq("is_used", false)
+    // Get the user ID from the session
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      return { success: false, error: "User not authenticated" }
+    }
+
+    // Get the club_id from the cookie
+    const cookieStore = await cookies()
+    const club_id = cookieStore.get("club_id")?.value
+
+    if (!club_id) {
+      return { success: false, error: "Club ID not found. Please re-enter player code." }
+    }
+
+    // Insert the player profile data into the player_profiles table
+    const { data: playerProfileData, error: playerProfileError } = await supabase
+      .from("player_profiles")
+      .insert([
+        {
+          id: user.id,
+          full_name: validatedData.fullName,
+          date_of_birth: validatedData.dateOfBirth,
+          position: validatedData.position,
+          preferred_foot: validatedData.preferredFoot,
+          height: validatedData.height ? Number.parseInt(validatedData.height) : null,
+          weight: validatedData.weight ? Number.parseInt(validatedData.weight) : null,
+          bio: validatedData.bio,
+          club_id: club_id,
+        },
+      ])
+      .select()
       .single()
 
-    if (codeError) {
-      return { success: false, error: "Invalid or expired code" }
+    if (playerProfileError) {
+      console.error("Error creating player profile:", playerProfileError)
+      return { success: false, error: playerProfileError.message }
     }
 
-    // Create a temporary password
-    const tempPassword = Math.random().toString(36).slice(-8)
+    // Mark the player code as used
+    const { error: updateCodeError } = await supabase
+      .from("player_codes")
+      .update({ is_used: true, player_id: user.id })
+      .eq("club_id", club_id)
+      .eq("code", (await cookies()).get("player_code")?.value)
 
-    // Sign up with Supabase
-    const { data, error } = await supabase.auth.signUp({
-      email: `player_${Date.now()}@temp.scoutvision.ai`, // Temporary email
-      password: tempPassword,
-      options: {
-        data: {
-          user_type: "player",
-        },
-      },
-    })
-
-    if (error) {
-      return { success: false, error: error.message }
+    if (updateCodeError) {
+      console.error("Error updating player code:", updateCodeError)
+      return { success: false, error: updateCodeError.message }
     }
 
-    if (data.user) {
-      // Create profile record
-      const { error: profileError } = await supabase.from("profiles").insert({
-        id: data.user.id,
-        email: data.user.email!,
-        user_type: "player",
-      })
-
-      if (profileError) {
-        return { success: false, error: profileError.message }
-      }
-
-      // Create player profile
-      const { error: playerError } = await supabase.from("player_profiles").insert({
-        id: data.user.id,
-        full_name: validatedData.fullName,
-        date_of_birth: validatedData.dateOfBirth,
-        position: validatedData.position,
-        preferred_foot: validatedData.preferredFoot,
-        height: validatedData.height ? Number.parseInt(validatedData.height) : null,
-        weight: validatedData.weight ? Number.parseInt(validatedData.weight) : null,
-        bio: validatedData.bio,
-        club_id: codeData.club_id,
-      })
-
-      if (playerError) {
-        return { success: false, error: playerError.message }
-      }
-
-      // Update player code to mark as used
-      const { error: updateCodeError } = await supabase
-        .from("player_codes")
-        .update({
-          is_used: true,
-          player_id: data.user.id,
-        })
-        .eq("id", codeData.id)
-
-      if (updateCodeError) {
-        return { success: false, error: updateCodeError.message }
-      }
-
-      // Clear the cookie
-      cookies().delete("player_code")
-
-      // Sign in the user
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: data.user.email!,
-        password: tempPassword,
-      })
-
-      if (signInError) {
-        return { success: false, error: signInError.message }
-      }
-
-      revalidatePath("/")
-      redirect("/player/dashboard")
-    }
+    revalidatePath("/")
+    redirect("/player/dashboard")
   } catch (error) {
+    console.error("Signup error:", error)
     if (error instanceof z.ZodError) {
       const fieldErrors = error.flatten().fieldErrors
       return { success: false, fieldErrors }
     }
-    return { success: false, error: "An unexpected error occurred" }
-  }
-}
-
-export async function generatePlayerCode() {
-  try {
-    // Get current user
-    const {
-      data: { session },
-    } = await supabase.auth.getSession()
-
-    if (!session) {
-      return { success: false, error: "Not authenticated" }
-    }
-
-    // Generate a random code
-    const code = Math.random().toString(36).substring(2, 10).toUpperCase()
-
-    // Set expiry date to 7 days from now
-    const expiresAt = new Date()
-    expiresAt.setDate(expiresAt.getDate() + 7)
-
-    // Insert the code
-    const { data, error } = await supabase
-      .from("player_codes")
-      .insert({
-        code,
-        club_id: session.user.id,
-        is_used: false,
-        expires_at: expiresAt.toISOString(),
-      })
-      .select()
-
-    if (error) {
-      return { success: false, error: error.message }
-    }
-
-    return { success: true, code }
-  } catch (error) {
-    return { success: false, error: "An unexpected error occurred" }
+    return { success: false, error: "An unexpected error occurred. Please try again." }
   }
 }
 
 export async function signOut() {
   try {
-    const { error } = await supabase.auth.signOut()
-
-    if (error) {
-      return { success: false, error: error.message }
-    }
-
+    await supabase.auth.signOut()
     revalidatePath("/")
     redirect("/")
   } catch (error) {
-    return { success: false, error: "An unexpected error occurred" }
+    console.error("Error signing out:", error)
   }
 }

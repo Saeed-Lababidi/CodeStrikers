@@ -2,17 +2,19 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Container } from "@/components/layout/container"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { Video, ArrowLeft } from "lucide-react"
+import { Video, ArrowLeft, Info, AlertTriangle, CheckCircle } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { signUpClub } from "@/lib/auth/actions"
 import { z } from "zod"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { isSupabaseConfigured } from "@/lib/supabase/client"
 
 // Validation schema
 const clubSignupSchema = z
@@ -42,11 +44,24 @@ export default function ClubSignupPage() {
   const [confirmPassword, setConfirmPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [errors, setErrors] = useState<FormErrors>({})
+  const [generalError, setGeneralError] = useState<string | null>(null)
+  const [configError, setConfigError] = useState<boolean>(false)
+  const [signupSuccess, setSignupSuccess] = useState(false)
+  const [successMessage, setSuccessMessage] = useState("")
   const { toast } = useToast()
+
+  useEffect(() => {
+    // Check if Supabase is configured
+    if (!isSupabaseConfigured()) {
+      setConfigError(true)
+    }
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrors({})
+    setGeneralError(null)
+    setSignupSuccess(false)
 
     try {
       // Client-side validation
@@ -69,16 +84,36 @@ export default function ClubSignupPage() {
       // Call server action
       const result = await signUpClub(formData)
 
-      if (!result.success) {
-        setIsLoading(false)
+      setIsLoading(false)
+
+      if (result.success) {
+        setSignupSuccess(true)
+        setSuccessMessage(result.message || "Account created successfully!")
+
+        // Clear the form
+        setClubName("")
+        setEmail("")
+        setPassword("")
+        setConfirmPassword("")
+
+        toast({
+          title: "Account Created",
+          description: "Your account has been created successfully.",
+        })
+      } else {
         if (result.fieldErrors) {
           setErrors(result.fieldErrors)
         } else {
-          toast({
-            title: "Error",
-            description: result.error || "Something went wrong",
-            variant: "destructive",
-          })
+          setGeneralError(result.error || "Something went wrong")
+
+          // If there's a database error, show a toast recommending the demo account
+          if (result.error?.includes("Database") || result.error?.includes("profile")) {
+            toast({
+              title: "Database Setup Issue",
+              description: "We recommend using the demo account for this preview.",
+              variant: "destructive",
+            })
+          }
         }
       }
     } catch (error) {
@@ -96,11 +131,7 @@ export default function ClubSignupPage() {
         })
         setErrors(fieldErrors)
       } else {
-        toast({
-          title: "Error",
-          description: "Something went wrong",
-          variant: "destructive",
-        })
+        setGeneralError("Something went wrong. Please try again.")
       }
     }
   }
@@ -130,6 +161,66 @@ export default function ClubSignupPage() {
                 <CardDescription>Sign up for a club account to start scouting and analyzing talent.</CardDescription>
               </CardHeader>
               <CardContent>
+                {configError && (
+                  <Alert className="mb-4 bg-amber-50 text-amber-800 border-amber-200">
+                    <Info className="h-4 w-4" />
+                    <AlertDescription>
+                      Supabase configuration is missing. Please check your environment variables.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {generalError && (
+                  <Alert className="mb-4 bg-red-50 text-red-800 border-red-200">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>{generalError}</AlertDescription>
+                  </Alert>
+                )}
+
+                {signupSuccess && (
+                  <Alert className="mb-4 bg-green-50 text-green-800 border-green-200">
+                    <CheckCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      {successMessage}
+                      <div className="mt-2">
+                        <Link href="/auth/club/login">
+                          <Button variant="outline" size="sm" className="text-green-700 border-green-700">
+                            Go to Login
+                          </Button>
+                        </Link>
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                <Alert className="mb-6 bg-blue-50 border-blue-200">
+                  <Info className="h-4 w-4 text-blue-600" />
+                  <AlertDescription className="text-blue-700">
+                    <strong className="font-medium">Recommended:</strong> For the best experience in this preview,
+                    please use our demo account instead of creating a new one.
+                  </AlertDescription>
+                </Alert>
+
+                <div className="bg-green-50 border border-green-200 rounded-md p-4 mb-6">
+                  <h3 className="text-sm font-medium text-green-800 mb-1">Demo Account</h3>
+                  <p className="text-xs text-green-700 mb-2">
+                    Use these credentials to access all features immediately:
+                  </p>
+                  <div className="text-xs text-green-700">
+                    <div>
+                      <strong>Email:</strong> demo@scoutvision.ai
+                    </div>
+                    <div>
+                      <strong>Password:</strong> Demo123456!
+                    </div>
+                  </div>
+                  <div className="mt-3">
+                    <Link href="/auth/club/login">
+                      <Button className="w-full text-sm">Go to Login with Demo Account</Button>
+                    </Link>
+                  </div>
+                </div>
+
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="clubName">Club Name</Label>
@@ -188,7 +279,7 @@ export default function ClubSignupPage() {
                     </div>
                   )}
 
-                  <Button type="submit" className="w-full" disabled={isLoading}>
+                  <Button type="submit" className="w-full" disabled={isLoading} variant="outline">
                     {isLoading ? "Creating account..." : "Create Account"}
                   </Button>
                 </form>

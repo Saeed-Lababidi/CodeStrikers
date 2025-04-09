@@ -5,7 +5,7 @@ import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
-import { BarChart, Activity, Users, Video, Clock, ArrowUpRight, LogOut, Copy } from "lucide-react"
+import { BarChart, Activity, Users, Video, Clock, ArrowUpRight, LogOut, Copy, Code } from "lucide-react"
 import { Container } from "@/components/layout/container"
 import { PageHeader } from "@/components/layout/page-header"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -21,30 +21,31 @@ export default function DashboardPage() {
   const { user } = useAuth()
 
   const handleGenerateCode = async () => {
-    setIsGeneratingCode(true)
-    try {
-      const result = await generatePlayerCode()
+  setIsGeneratingCode(true)
+  try {
+    const result = await generatePlayerCode()
 
-      if (result.success && result.code) {
-        setPlayerCode(result.code)
-        setShowCodeDialog(true)
-      } else {
-        toast({
-          title: "Error",
-          description: result.error || "Failed to generate player code",
-          variant: "destructive",
-        })
-      }
-    } catch (error) {
+    if (result.success && "code" in result && result.code) {
+      setPlayerCode(result.code)
+      setShowCodeDialog(true)
+    } else {
       toast({
         title: "Error",
-        description: "Something went wrong",
+        description: "error" in result && result.error ? result.error : "Failed to generate player code",
         variant: "destructive",
       })
-    } finally {
-      setIsGeneratingCode(false)
     }
+  } catch (error: any) {
+    console.error("Error generating player code:", error)
+    toast({
+      title: "Error",
+      description: error.message || "Something went wrong",
+      variant: "destructive",
+    })
+  } finally {
+    setIsGeneratingCode(false)
   }
+}
 
   const handleCopyCode = () => {
     if (playerCode) {
@@ -98,6 +99,12 @@ export default function DashboardPage() {
           <div className="flex flex-wrap gap-2">
             <Link href="/upload">
               <Button>Upload New Footage</Button>
+            </Link>
+            <Link href="/video-analysis">
+              <Button variant="outline" className="gap-2">
+                <Code className="h-4 w-4" />
+                Python Analysis
+              </Button>
             </Link>
             <Button variant="outline" onClick={handleGenerateCode} disabled={isGeneratingCode}>
               {isGeneratingCode ? "Generating..." : "Generate Player Code"}
