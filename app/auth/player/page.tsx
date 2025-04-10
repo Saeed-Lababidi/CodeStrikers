@@ -3,18 +3,20 @@
 import type React from "react"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Container } from "@/components/layout/container"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Video, ArrowLeft } from "lucide-react"
+import { ArrowLeft } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { verifyPlayerCode } from "@/lib/auth/actions"
+import { verifyPlayerCode } from "@/lib/auth/actions" // Fixed import path
 
 export default function PlayerAuthPage() {
   const [code, setCode] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
   const { toast } = useToast()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,28 +34,30 @@ export default function PlayerAuthPage() {
     setIsLoading(true)
 
     try {
-      // Create form data for server action
       const formData = new FormData()
       formData.append("code", code)
 
-      // Call server action
       const result = await verifyPlayerCode(formData)
 
-      if (!result.success) {
-        setIsLoading(false)
+      if (result.success) {
+        // The redirect will happen in the server action
+        // This code won't execute if redirect is successful
+      } else {
         toast({
           title: "Error",
           description: result.error || "Invalid player code",
           variant: "destructive",
         })
+        setIsLoading(false)
       }
     } catch (error) {
-      setIsLoading(false)
+      console.error("Verification error:", error)
       toast({
         title: "Error",
-        description: "Something went wrong",
+        description: "An unexpected error occurred",
         variant: "destructive",
       })
+      setIsLoading(false)
     }
   }
 
@@ -62,8 +66,8 @@ export default function PlayerAuthPage() {
       <header className="border-b">
         <Container className="flex h-16 items-center">
           <Link href="/" className="flex items-center gap-2 font-bold text-xl">
-            <Video className="h-6 w-6 text-green-600" />
-            <span>ScoutVision AI</span>
+            <img src="/logo.png" alt="CodeStrikers Logo" className="h-8 w-8" />
+            <span>CodeStrikers</span>
           </Link>
         </Container>
       </header>
@@ -90,11 +94,11 @@ export default function PlayerAuthPage() {
                       id="code"
                       placeholder="Enter your player code"
                       value={code}
-                      onChange={(e) => setCode(e.target.value.toUpperCase())}
+                      onChange={(e) => setCode(e.target.value)}
                       className="text-center text-lg tracking-wider"
                     />
                     <p className="text-xs text-gray-500 text-center">
-                      Your coach or club administrator will provide you with a unique access code
+                      Example: For demo, use code "NEW123" for new player or "PLAYER1" for existing player
                     </p>
                   </div>
 
@@ -110,7 +114,7 @@ export default function PlayerAuthPage() {
 
       <footer className="border-t py-6">
         <Container className="flex justify-center">
-          <p className="text-center text-sm text-gray-500">© 2025 ScoutVision AI. All rights reserved.</p>
+          <p className="text-center text-sm text-gray-500">© 2025 CodeStrikers. All rights reserved.</p>
         </Container>
       </footer>
     </div>

@@ -1,61 +1,16 @@
 "use client"
-
-import { useState } from "react"
 import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
-import { BarChart, Activity, Users, Video, Clock, ArrowUpRight, LogOut, Copy, Code } from "lucide-react"
+import { BarChart, Activity, Users, Video, Clock, ArrowUpRight, LogOut, Code } from "lucide-react"
 import { Container } from "@/components/layout/container"
 import { PageHeader } from "@/components/layout/page-header"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
-import { generatePlayerCode, signOut } from "@/lib/auth/actions"
-import { useAuth } from "@/lib/auth/auth-context"
+import { signOut } from "@/lib/auth/actions"
 
 export default function DashboardPage() {
-  const [isGeneratingCode, setIsGeneratingCode] = useState(false)
-  const [playerCode, setPlayerCode] = useState<string | null>(null)
-  const [showCodeDialog, setShowCodeDialog] = useState(false)
   const { toast } = useToast()
-  const { user } = useAuth()
-
-  const handleGenerateCode = async () => {
-  setIsGeneratingCode(true)
-  try {
-    const result = await generatePlayerCode()
-
-    if (result.success && "code" in result && result.code) {
-      setPlayerCode(result.code)
-      setShowCodeDialog(true)
-    } else {
-      toast({
-        title: "Error",
-        description: "error" in result && result.error ? result.error : "Failed to generate player code",
-        variant: "destructive",
-      })
-    }
-  } catch (error: any) {
-    console.error("Error generating player code:", error)
-    toast({
-      title: "Error",
-      description: error.message || "Something went wrong",
-      variant: "destructive",
-    })
-  } finally {
-    setIsGeneratingCode(false)
-  }
-}
-
-  const handleCopyCode = () => {
-    if (playerCode) {
-      navigator.clipboard.writeText(playerCode)
-      toast({
-        title: "Copied!",
-        description: "Player code copied to clipboard",
-      })
-    }
-  }
 
   const handleLogout = async () => {
     await signOut()
@@ -66,16 +21,13 @@ export default function DashboardPage() {
       <header className="border-b">
         <Container className="flex h-16 items-center justify-between">
           <Link href="/" className="flex items-center gap-2 font-bold text-xl">
-            <Video className="h-6 w-6 text-green-600" />
-            <span>ScoutVision AI</span>
+            <img src="/logo.png" alt="CodeStrikers Logo" className="h-8 w-8" />
+            <span>CodeStrikers</span>
           </Link>
 
           <nav className="hidden md:flex items-center gap-6">
             <Link href="/dashboard" className="font-medium text-green-600">
               Dashboard
-            </Link>
-            <Link href="/upload" className="font-medium">
-              Upload
             </Link>
             <Link href="/players" className="font-medium">
               Players
@@ -106,9 +58,6 @@ export default function DashboardPage() {
                 Python Analysis
               </Button>
             </Link>
-            <Button variant="outline" onClick={handleGenerateCode} disabled={isGeneratingCode}>
-              {isGeneratingCode ? "Generating..." : "Generate Player Code"}
-            </Button>
           </div>
         </PageHeader>
 
@@ -277,29 +226,10 @@ export default function DashboardPage() {
         </Tabs>
       </Container>
 
-      <Dialog open={showCodeDialog} onOpenChange={setShowCodeDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Player Access Code Generated</DialogTitle>
-            <DialogDescription>
-              Share this code with your player. They will use it to access their dashboard.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="bg-gray-100 p-4 rounded-md text-center">
-            <p className="text-2xl font-mono font-bold tracking-wider">{playerCode}</p>
-          </div>
-          <p className="text-sm text-gray-500">This code will expire in 7 days. The player must use it before then.</p>
-          <Button onClick={handleCopyCode} className="w-full gap-2">
-            <Copy className="h-4 w-4" />
-            Copy Code
-          </Button>
-        </DialogContent>
-      </Dialog>
-
       <footer className="border-t py-6 mt-auto">
         <Container className="flex flex-col items-center justify-center gap-4 md:flex-row md:gap-8">
           <p className="text-center text-sm leading-loose text-gray-500 md:text-left">
-            © 2025 ScoutVision AI. All rights reserved.
+            © 2025 CodeStrikers. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
             <Link href="/about" className="text-sm text-gray-500 hover:underline">

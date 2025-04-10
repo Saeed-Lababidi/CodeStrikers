@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Container } from "@/components/layout/container"
 import { PageHeader } from "@/components/layout/page-header"
-import { Video, Search, Filter, ChevronDown, ArrowUpDown, Star, StarHalf } from "lucide-react"
+import { Search, Filter, ChevronDown, ArrowUpDown, Star, StarHalf } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
@@ -74,8 +74,8 @@ export default function LeaderboardPage() {
       <header className="border-b">
         <Container className="flex h-16 items-center justify-between">
           <Link href="/" className="flex items-center gap-2 font-bold text-xl">
-            <Video className="h-6 w-6 text-green-600" />
-            <span>ScoutVision AI</span>
+            <img src="/logo.png" alt="CodeStrikers Logo" className="h-8 w-8" />
+            <span>CodeStrikers</span>
           </Link>
 
           <nav className="hidden md:flex items-center gap-6">
@@ -224,7 +224,7 @@ export default function LeaderboardPage() {
       <footer className="border-t py-6">
         <Container className="flex flex-col items-center justify-center gap-4 md:flex-row md:gap-8">
           <p className="text-center text-sm leading-loose text-gray-500 md:text-left">
-            © 2025 ScoutVision AI. All rights reserved.
+            © 2025 CodeStrikers. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
             <Link href="/about" className="text-sm text-gray-500 hover:underline">

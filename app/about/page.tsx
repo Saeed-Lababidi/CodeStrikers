@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Container } from "@/components/layout/container"
-import { Video, Users, Award, BarChart2, Zap, Globe } from "lucide-react"
+import { Users, Award, BarChart2, Zap, Globe } from "lucide-react"
 
 export default function AboutPage() {
   return (
@@ -9,8 +9,8 @@ export default function AboutPage() {
       <header className="border-b">
         <Container className="flex h-16 items-center justify-between">
           <Link href="/" className="flex items-center gap-2 font-bold text-xl">
-            <Video className="h-6 w-6 text-green-600" />
-            <span>ScoutVision AI</span>
+            <img src="/logo.png" alt="CodeStrikers Logo" className="h-8 w-8" />
+            <span>CodeStrikers</span>
           </Link>
 
           <nav className="hidden md:flex items-center gap-6">
@@ -249,7 +249,7 @@ export default function AboutPage() {
       <footer className="border-t py-6 md:py-8">
         <Container className="flex flex-col items-center justify-center gap-4 md:flex-row md:gap-8">
           <p className="text-center text-sm leading-loose text-gray-500 md:text-left">
-            © 2025 ScoutVision AI. All rights reserved.
+            © 2025 CodeStrikers. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
             <Link href="/about" className="text-sm text-gray-500 hover:underline">

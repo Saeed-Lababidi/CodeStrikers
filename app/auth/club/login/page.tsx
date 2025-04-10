@@ -2,96 +2,83 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Container } from "@/components/layout/container"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { Video, ArrowLeft, Info, AlertTriangle, RefreshCw } from "lucide-react"
+import { ArrowLeft, Unlock } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { signInUser } from "@/lib/auth/actions"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { isSupabaseConfigured } from "@/lib/supabase/client"
 
 export default function ClubLoginPage() {
-  const [email, setEmail] = useState("demo@scoutvision.ai")
-  const [password, setPassword] = useState("Demo123456!")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [configError, setConfigError] = useState<boolean>(false)
-  const [isSettingUpDemo, setIsSettingUpDemo] = useState(false)
+  const router = useRouter()
   const { toast } = useToast()
-
-  useEffect(() => {
-    // Check if Supabase is configured
-    if (!isSupabaseConfigured()) {
-      setConfigError(true)
-    }
-  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError(null)
+
+    if (!email.trim() || !password.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter both email and password",
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsLoading(true)
 
     try {
-      // Always use demo credentials
-      const demoEmail = "demo@scoutvision.ai"
-      const demoPassword = "Demo123456!"
-
-      // Create form data for server action
       const formData = new FormData()
-      formData.append("email", demoEmail)
-      formData.append("password", demoPassword)
+      formData.append("email", email)
+      formData.append("password", password)
 
-      // Call server action
       const result = await signInUser(formData)
 
-      if (!result.success) {
+      if (result.success) {
+        // The redirect will happen in the server action
+        // This code won't execute if redirect is successful
+      } else {
+        toast({
+          title: "Error",
+          description: result.error || "Invalid credentials",
+          variant: "destructive",
+        })
         setIsLoading(false)
-        setError(result.error || "Login failed. Please try again.")
       }
-      // If successful, the server action will redirect to dashboard
     } catch (error) {
+      console.error("Login error:", error)
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      })
       setIsLoading(false)
-      setError("Something went wrong. Please try again.")
     }
   }
 
-  const setupDemoAccount = async () => {
-    setIsSettingUpDemo(true)
-    setError(null)
+  const handleBypass = async () => {
+    // Set cookies manually
+    document.cookie = `session_id=bypass-${Date.now()};path=/;max-age=${7 * 24 * 60 * 60}`
+    document.cookie = `user_id=bypass-user-${Date.now()};path=/;max-age=${7 * 24 * 60 * 60}`
+    document.cookie = `user_type=club;path=/;max-age=${7 * 24 * 60 * 60}`
 
-    try {
-      const response = await fetch("/api/setup-demo")
-      const data = await response.json()
+    toast({
+      title: "Success",
+      description: "Bypassing authentication...",
+    })
 
-      if (data.success) {
-        toast({
-          title: "Demo Account Ready",
-          description: "The demo account has been set up. You can now log in.",
-        })
-        setError(null)
-      } else {
-        setError("Failed to set up demo account: " + (data.error || "Unknown error"))
-        toast({
-          title: "Setup Failed",
-          description: "Failed to set up demo account. Please try again.",
-          variant: "destructive",
-        })
-      }
-    } catch (error) {
-      setError("Failed to set up demo account. Please try again.")
-      toast({
-        title: "Setup Error",
-        description: "An error occurred while setting up the demo account.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsSettingUpDemo(false)
-    }
+    // Redirect to dashboard
+    setTimeout(() => {
+      router.push("/dashboard")
+    }, 1000)
   }
 
   return (
@@ -99,8 +86,8 @@ export default function ClubLoginPage() {
       <header className="border-b">
         <Container className="flex h-16 items-center">
           <Link href="/" className="flex items-center gap-2 font-bold text-xl">
-            <Video className="h-6 w-6 text-green-600" />
-            <span>ScoutVision AI</span>
+            <img src="/logo.png" alt="CodeStrikers Logo" className="h-8 w-8" />
+            <span>CodeStrikers</span>
           </Link>
         </Container>
       </header>
@@ -119,52 +106,6 @@ export default function ClubLoginPage() {
                 <CardDescription>Sign in to your club account to access the scouting dashboard.</CardDescription>
               </CardHeader>
               <CardContent>
-                {configError && (
-                  <Alert className="mb-4 bg-amber-50 text-amber-800 border-amber-200">
-                    <Info className="h-4 w-4" />
-                    <AlertDescription>
-                      Supabase configuration is missing. Please check your environment variables.
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                {error && (
-                  <Alert className="mb-4 bg-red-50 text-red-800 border-red-200">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription>
-                      {error}
-                      {error.includes("Invalid login credentials") && (
-                        <div className="mt-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-red-700 border-red-300"
-                            onClick={setupDemoAccount}
-                            disabled={isSettingUpDemo}
-                          >
-                            {isSettingUpDemo ? (
-                              <>
-                                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                                Setting up demo account...
-                              </>
-                            ) : (
-                              "Set Up Demo Account"
-                            )}
-                          </Button>
-                        </div>
-                      )}
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                <Alert className="mb-6 bg-green-50 border-green-200">
-                  <Info className="h-4 w-4 text-green-600" />
-                  <AlertDescription className="text-green-700">
-                    <strong className="font-medium">Demo Account:</strong> The credentials below are pre-filled and
-                    ready to use. Just click "Sign In" to access all features.
-                  </AlertDescription>
-                </Alert>
-
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
@@ -174,7 +115,6 @@ export default function ClubLoginPage() {
                       placeholder="your@email.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="border-green-300 bg-green-50"
                     />
                   </div>
 
@@ -191,12 +131,30 @@ export default function ClubLoginPage() {
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="border-green-300 bg-green-50"
                     />
                   </div>
 
                   <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? "Signing in..." : "Sign In with Demo Account"}
+                    {isLoading ? "Signing in..." : "Sign In"}
+                  </Button>
+
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-white px-2 text-gray-500">Or</span>
+                    </div>
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full flex items-center justify-center gap-2"
+                    onClick={handleBypass}
+                  >
+                    <Unlock className="h-4 w-4" />
+                    <span>Bypass Authentication (Demo)</span>
                   </Button>
                 </form>
               </CardContent>
@@ -215,7 +173,7 @@ export default function ClubLoginPage() {
 
       <footer className="border-t py-6">
         <Container className="flex justify-center">
-          <p className="text-center text-sm text-gray-500">© 2025 ScoutVision AI. All rights reserved.</p>
+          <p className="text-center text-sm text-gray-500">© 2025 CodeStrikers. All rights reserved.</p>
         </Container>
       </footer>
     </div>

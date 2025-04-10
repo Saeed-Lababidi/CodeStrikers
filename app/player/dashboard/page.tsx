@@ -3,7 +3,7 @@ import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
-import { Activity, Video, Clock, ArrowUpRight, Award, TrendingUp, User, LogOut, Settings } from "lucide-react"
+import { Activity, Video, Clock, ArrowUpRight, Award, TrendingUp, User, LogOut } from "lucide-react"
 import { Container } from "@/components/layout/container"
 import { PageHeader } from "@/components/layout/page-header"
 import {
@@ -14,11 +14,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { signOut } from "@/lib/auth/actions"
-import { useAuth } from "@/lib/auth/auth-context"
 
 export default function PlayerDashboardPage() {
-  const { user } = useAuth()
-
   const handleLogout = async () => {
     await signOut()
   }
@@ -27,10 +24,35 @@ export default function PlayerDashboardPage() {
     <div className="flex flex-col min-h-screen">
       <header className="border-b">
         <Container className="flex h-16 items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 font-bold text-xl">
-            <Video className="h-6 w-6 text-green-600" />
-            <span>ScoutVision AI</span>
-          </Link>
+          <div className="flex items-center gap-4">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-full">
+                  <User className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <div className="px-2 py-1.5 text-sm font-medium">Player Account</div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/player/profile" className="cursor-pointer">
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Account</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Log out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Link href="/" className="flex items-center gap-2 font-bold text-xl">
+              <img src="/logo.png" alt="CodeStrikers Logo" className="h-8 w-8" />
+              <span>CodeStrikers</span>
+            </Link>
+          </div>
 
           <nav className="hidden md:flex items-center gap-6">
             <Link href="/player/dashboard" className="font-medium text-green-600">
@@ -46,37 +68,6 @@ export default function PlayerDashboardPage() {
               Profile
             </Link>
           </nav>
-
-          <div className="flex items-center gap-4">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full">
-                  <User className="h-5 w-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <div className="px-2 py-1.5 text-sm font-medium">Player Account</div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/player/profile" className="cursor-pointer">
-                    <User className="mr-2 h-4 w-4" />
-                    <span>My Profile</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/player/settings" className="cursor-pointer">
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Settings</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600">
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Log out</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
         </Container>
       </header>
 
@@ -312,7 +303,7 @@ export default function PlayerDashboardPage() {
       <footer className="border-t py-6 mt-auto">
         <Container className="flex flex-col items-center justify-center gap-4 md:flex-row md:gap-8">
           <p className="text-center text-sm leading-loose text-gray-500 md:text-left">
-            © 2025 ScoutVision AI. All rights reserved.
+            © 2025 CodeStrikers. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
             <Link href="/about" className="text-sm text-gray-500 hover:underline">

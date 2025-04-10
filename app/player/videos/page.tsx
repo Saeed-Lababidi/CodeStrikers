@@ -1,14 +1,10 @@
 "use client"
-
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Container } from "@/components/layout/container"
 import { Card, CardContent } from "@/components/ui/card"
-import { Video, User, Search, Filter, ChevronDown, ArrowUpDown, LogOut, Upload } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { User, LogOut, Settings, ArrowUpRight, Play, Calendar, Clock } from "lucide-react"
+import { Container } from "@/components/layout/container"
 import { PageHeader } from "@/components/layout/page-header"
-import { Input } from "@/components/ui/input"
-import { signOut } from "@/lib/auth/actions"
-import { useAuth } from "@/lib/auth/auth-context"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,10 +12,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { signOut } from "@/lib/auth/actions"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default function PlayerVideosPage() {
-  const { user } = useAuth()
-
   const handleLogout = async () => {
     await signOut()
   }
@@ -29,8 +25,8 @@ export default function PlayerVideosPage() {
       <header className="border-b">
         <Container className="flex h-16 items-center justify-between">
           <Link href="/" className="flex items-center gap-2 font-bold text-xl">
-            <Video className="h-6 w-6 text-green-600" />
-            <span>ScoutVision AI</span>
+            <img src="/logo.png" alt="CodeStrikers Logo" className="h-8 w-8" />
+            <span>CodeStrikers</span>
           </Link>
 
           <nav className="hidden md:flex items-center gap-6">
@@ -64,6 +60,12 @@ export default function PlayerVideosPage() {
                     <span>My Profile</span>
                   </Link>
                 </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/player/settings" className="cursor-pointer">
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Settings</span>
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600">
                   <LogOut className="mr-2 h-4 w-4" />
@@ -77,104 +79,165 @@ export default function PlayerVideosPage() {
 
       <main className="flex-1">
         <Container className="py-6 sm:py-10">
-          <PageHeader title="My Videos" description="View and manage your uploaded videos">
+          <PageHeader title="My Videos" description="View and manage your uploaded footage">
             <Link href="/player/upload">
-              <Button className="gap-2">
-                <Upload className="h-4 w-4" />
-                Upload New Video
-              </Button>
+              <Button>Upload New Footage</Button>
             </Link>
           </PageHeader>
 
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-6 sm:mb-8">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-              <Input placeholder="Search videos..." className="pl-10" />
-            </div>
+          <Tabs defaultValue="all" className="w-full mb-8">
+            <TabsList>
+              <TabsTrigger value="all">All Videos</TabsTrigger>
+              <TabsTrigger value="analyzed">Analyzed</TabsTrigger>
+              <TabsTrigger value="pending">Pending Analysis</TabsTrigger>
+            </TabsList>
 
-            <div className="flex gap-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="flex items-center gap-2">
-                    <Filter className="h-4 w-4" />
-                    Filter
-                    <ChevronDown className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem>All Videos</DropdownMenuItem>
-                  <DropdownMenuItem>Match Footage</DropdownMenuItem>
-                  <DropdownMenuItem>Training Sessions</DropdownMenuItem>
-                  <DropdownMenuItem>Skills Showcase</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+            <TabsContent value="all" className="mt-0">
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <Card key={i} className="overflow-hidden">
+                    <CardContent className="p-0">
+                      <div className="aspect-video bg-gray-100 relative group">
+                        <img
+                          src={`/placeholder.svg?height=200&width=400&text=Training+${i}`}
+                          alt={`Training ${i} thumbnail`}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black bg-opacity-30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <Button variant="ghost" size="icon" className="rounded-full bg-white text-black">
+                            <Play className="h-6 w-6" />
+                          </Button>
+                        </div>
+                        <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                          2:45
+                        </div>
+                        <div className="absolute top-2 right-2">
+                          <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                            {i % 3 === 0 ? "Analyzed" : i % 3 === 1 ? "Processing" : "Pending"}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="p-4">
+                        <h3 className="font-semibold mb-1">Training Session {i}</h3>
+                        <div className="flex items-center text-sm text-gray-500 mb-3">
+                          <Calendar className="h-3 w-3 mr-1" />
+                          <span>April {i + 1}, 2025</span>
+                          <span className="mx-2">•</span>
+                          <Clock className="h-3 w-3 mr-1" />
+                          <span>2:45</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-gray-500">Uploaded 2 weeks ago</span>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <ArrowUpRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="flex items-center gap-2">
-                    <ArrowUpDown className="h-4 w-4" />
-                    Sort
-                    <ChevronDown className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem>Newest First</DropdownMenuItem>
-                  <DropdownMenuItem>Oldest First</DropdownMenuItem>
-                  <DropdownMenuItem>Highest Rated</DropdownMenuItem>
-                  <DropdownMenuItem>Most Viewed</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
+            <TabsContent value="analyzed" className="mt-0">
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {[1, 4].map((i) => (
+                  <Card key={i} className="overflow-hidden">
+                    <CardContent className="p-0">
+                      <div className="aspect-video bg-gray-100 relative group">
+                        <img
+                          src={`/placeholder.svg?height=200&width=400&text=Training+${i}`}
+                          alt={`Training ${i} thumbnail`}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black bg-opacity-30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <Button variant="ghost" size="icon" className="rounded-full bg-white text-black">
+                            <Play className="h-6 w-6" />
+                          </Button>
+                        </div>
+                        <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                          2:45
+                        </div>
+                        <div className="absolute top-2 right-2">
+                          <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">Analyzed</span>
+                        </div>
+                      </div>
+                      <div className="p-4">
+                        <h3 className="font-semibold mb-1">Training Session {i}</h3>
+                        <div className="flex items-center text-sm text-gray-500 mb-3">
+                          <Calendar className="h-3 w-3 mr-1" />
+                          <span>April {i + 1}, 2025</span>
+                          <span className="mx-2">•</span>
+                          <Clock className="h-3 w-3 mr-1" />
+                          <span>2:45</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-gray-500">Uploaded 2 weeks ago</span>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <ArrowUpRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
 
-          <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 9 }).map((_, i) => (
-              <Card key={i}>
-                <CardContent className="p-0">
-                  <div className="aspect-video bg-gray-100 relative">
-                    <img
-                      src={`/placeholder.svg?height=200&width=400&text=Video+${i + 1}`}
-                      alt={`Video ${i + 1} thumbnail`}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
-                      {Math.floor(Math.random() * 5) + 1}:
-                      {Math.floor(Math.random() * 60)
-                        .toString()
-                        .padStart(2, "0")}
-                    </div>
-                  </div>
-                  <div className="p-4">
-                    <h3 className="font-semibold mb-1">
-                      {i % 3 === 0
-                        ? `Match Highlights ${Math.floor(i / 3) + 1}`
-                        : i % 3 === 1
-                          ? `Training Session ${Math.floor(i / 3) + 1}`
-                          : `Skills Showcase ${Math.floor(i / 3) + 1}`}
-                    </h3>
-                    <p className="text-sm text-gray-500 mb-2">Uploaded on April {i + 1}, 2025</p>
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                        {i % 4 === 0 ? "Processing" : "Analyzed"}
-                      </span>
-                      <Link href={`/player/videos/${i + 1}`}>
-                        <Button variant="outline" size="sm">
-                          View Analysis
-                        </Button>
-                      </Link>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+            <TabsContent value="pending" className="mt-0">
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {[2, 3, 5, 6].map((i) => (
+                  <Card key={i} className="overflow-hidden">
+                    <CardContent className="p-0">
+                      <div className="aspect-video bg-gray-100 relative group">
+                        <img
+                          src={`/placeholder.svg?height=200&width=400&text=Training+${i}`}
+                          alt={`Training ${i} thumbnail`}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black bg-opacity-30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <Button variant="ghost" size="icon" className="rounded-full bg-white text-black">
+                            <Play className="h-6 w-6" />
+                          </Button>
+                        </div>
+                        <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                          2:45
+                        </div>
+                        <div className="absolute top-2 right-2">
+                          <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">
+                            {i % 3 === 1 ? "Processing" : "Pending"}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="p-4">
+                        <h3 className="font-semibold mb-1">Training Session {i}</h3>
+                        <div className="flex items-center text-sm text-gray-500 mb-3">
+                          <Calendar className="h-3 w-3 mr-1" />
+                          <span>April {i + 1}, 2025</span>
+                          <span className="mx-2">•</span>
+                          <Clock className="h-3 w-3 mr-1" />
+                          <span>2:45</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-gray-500">Uploaded 2 weeks ago</span>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <ArrowUpRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
+          </Tabs>
         </Container>
       </main>
 
       <footer className="border-t py-6 mt-auto">
         <Container className="flex flex-col items-center justify-center gap-4 md:flex-row md:gap-8">
           <p className="text-center text-sm leading-loose text-gray-500 md:text-left">
-            © 2025 ScoutVision AI. All rights reserved.
+            © 2025 CodeStrikers. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
             <Link href="/about" className="text-sm text-gray-500 hover:underline">

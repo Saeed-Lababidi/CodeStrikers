@@ -4,10 +4,10 @@ import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Container } from "@/components/layout/container"
-import { Video, ArrowRight } from "lucide-react"
+import { ArrowRight } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 
-export default function LandingPage() {
+export default function HomePage() {
   const [activeButton, setActiveButton] = useState<"club" | "player" | null>(null)
 
   return (
@@ -15,18 +15,18 @@ export default function LandingPage() {
       <header className="border-b">
         <Container className="flex h-16 items-center justify-between">
           <div className="flex items-center gap-2 font-bold text-xl">
-            <Video className="h-6 w-6 text-green-600" />
-            <span>ScoutVision AI</span>
+            <img src="/logo.png" alt="CodeStrikers Logo" className="h-8 w-8" />
+            <span>CodeStrikers</span>
           </div>
           <nav className="hidden md:flex items-center gap-6">
-            <Link href="/about" className="font-medium">
-              About Us
-            </Link>
             <Link href="/features" className="font-medium">
               Features
             </Link>
             <Link href="/pricing" className="font-medium">
               Pricing
+            </Link>
+            <Link href="/about" className="font-medium">
+              About Us
             </Link>
           </nav>
         </Container>
@@ -115,17 +115,6 @@ export default function LandingPage() {
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </div>
-            </div>
-
-            <div className="mt-16">
-              <h2 className="text-2xl font-bold mb-4">Trusted by clubs and players worldwide</h2>
-              <div className="flex flex-wrap justify-center gap-8 opacity-70">
-                <div className="h-12 w-24 bg-gray-200 rounded flex items-center justify-center">Logo 1</div>
-                <div className="h-12 w-24 bg-gray-200 rounded flex items-center justify-center">Logo 2</div>
-                <div className="h-12 w-24 bg-gray-200 rounded flex items-center justify-center">Logo 3</div>
-                <div className="h-12 w-24 bg-gray-200 rounded flex items-center justify-center">Logo 4</div>
-                <div className="h-12 w-24 bg-gray-200 rounded flex items-center justify-center">Logo 5</div>
               </div>
             </div>
 
