@@ -36,7 +36,6 @@
 - Node.js (v18+)
 - Python (v3.9+)
 - pip + virtualenv (optional but recommended)
-- ffmpeg (for video handling)
 
 ---
 
