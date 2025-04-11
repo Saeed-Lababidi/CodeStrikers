@@ -42,7 +42,14 @@
 ### Frontend Setup
 
 ```bash
+pnpm install
+```
+```bash
 pnpm run dev
+```
+After navigating to the python folder directory:
+```bash
+pip install requirements.txt
 ```
 
 ---
