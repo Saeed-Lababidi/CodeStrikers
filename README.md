@@ -42,10 +42,10 @@
 ### Frontend Setup
 
 ```bash
-pnpm install
+npm install --legacy-peer-deps
 ```
 ```bash
-pnpm run dev
+npm run dev
 ```
 After navigating to the python folder directory:
 ```bash
