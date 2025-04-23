@@ -133,7 +133,7 @@ export default function HomePage() {
       <footer className="border-t py-6 md:py-8">
         <Container className="flex flex-col items-center justify-center gap-4 md:flex-row md:gap-8">
           <p className="text-center text-sm leading-loose text-gray-500 md:text-left">
-            © 2025 ScoutVision AI. All rights reserved.
+            © 2025 CodeStrikers. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
             <Link href="/about" className="text-sm text-gray-500 hover:underline">

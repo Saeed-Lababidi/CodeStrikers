@@ -1,85 +1,122 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Container } from "@/components/layout/container"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { ArrowLeft, Unlock } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
-import { signInUser } from "@/lib/auth/actions"
+import { useState } from "react";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Container } from "@/components/layout/container";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
+import { ArrowLeft, Unlock } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabase";
 
 export default function ClubLoginPage() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
-  const { toast } = useToast()
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+  const { toast } = useToast();
+  const [showResendModal, setShowResendModal] = useState(false);
+  const [showLoginErrorModal, setShowLoginErrorModal] = useState(false);
+
+  useEffect(() => {
+    setShowLoginErrorModal(false);
+  }, [email, password]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("signup") === "success") {
+      setShowResendModal(true);
+    }
+  }, []);  
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
+    setIsLoading(true);
 
-    if (!email.trim() || !password.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter both email and password",
-        variant: "destructive",
-      })
-      return
-    }
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-    setIsLoading(true)
-
-    try {
-      const formData = new FormData()
-      formData.append("email", email)
-      formData.append("password", password)
-
-      const result = await signInUser(formData)
-
-      if (result.success) {
-        // The redirect will happen in the server action
-        // This code won't execute if redirect is successful
+    if (error) {
+      if (error.message.toLowerCase().includes("email not confirmed")) {
+        toast({
+          title: "Email not confirmed",
+          description:
+            "Check your inbox or click below to resend confirmation.",
+          variant: "destructive",
+        });
+        setShowResendModal(true);
       } else {
         toast({
-          title: "Error",
-          description: result.error || "Invalid credentials",
+          title: "Login failed",
+          description: "Username and/or password is incorrect",
           variant: "destructive",
-        })
-        setIsLoading(false)
+        });
+        setShowLoginErrorModal(true);
       }
-    } catch (error) {
-      console.error("Login error:", error)
+    } else {
+      toast({ title: "Login successful" });
+      router.push("/dashboard");
+    }
+
+    setIsLoading(false);
+  };
+
+  const handleResendConfirmation = async () => {
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email,
+    });
+  
+    if (error) {
       toast({
         title: "Error",
-        description: "An unexpected error occurred",
+        description: error.message,
         variant: "destructive",
-      })
-      setIsLoading(false)
+      });
+    } else {
+      toast({
+        title: "Confirmation sent",
+        description: "Check your email to confirm your account.",
+      });
+      setShowResendModal(false);
     }
-  }
-
+  };
+  
   const handleBypass = async () => {
     // Set cookies manually
-    document.cookie = `session_id=bypass-${Date.now()};path=/;max-age=${7 * 24 * 60 * 60}`
-    document.cookie = `user_id=bypass-user-${Date.now()};path=/;max-age=${7 * 24 * 60 * 60}`
-    document.cookie = `user_type=club;path=/;max-age=${7 * 24 * 60 * 60}`
+    document.cookie = `session_id=bypass-${Date.now()};path=/;max-age=${
+      7 * 24 * 60 * 60
+    }`;
+    document.cookie = `user_id=bypass-user-${Date.now()};path=/;max-age=${
+      7 * 24 * 60 * 60
+    }`;
+    document.cookie = `user_type=club;path=/;max-age=${7 * 24 * 60 * 60}`;
 
     toast({
       title: "Success",
       description: "Bypassing authentication...",
-    })
+    });
 
     // Redirect to dashboard
     setTimeout(() => {
-      router.push("/dashboard")
-    }, 1000)
-  }
+      router.push("/dashboard");
+    }, 1000);
+  };
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -95,7 +132,10 @@ export default function ClubLoginPage() {
       <main className="flex-1 flex items-center justify-center py-10">
         <Container>
           <div className="max-w-md mx-auto">
-            <Link href="/" className="inline-flex items-center text-sm text-gray-500 hover:text-gray-900 mb-6">
+            <Link
+              href="/"
+              className="inline-flex items-center text-sm text-gray-500 hover:text-gray-900 mb-6"
+            >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to home
             </Link>
@@ -103,7 +143,9 @@ export default function ClubLoginPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-2xl">Club Login</CardTitle>
-                <CardDescription>Sign in to your club account to access the scouting dashboard.</CardDescription>
+                <CardDescription>
+                  Sign in to your club account to access the scouting dashboard.
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -121,7 +163,10 @@ export default function ClubLoginPage() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="password">Password</Label>
-                      <Link href="/auth/club/reset-password" className="text-xs text-gray-500 hover:underline">
+                      <Link
+                        href="/auth/club/reset-password"
+                        className="text-xs text-gray-500 hover:underline"
+                      >
                         Forgot password?
                       </Link>
                     </div>
@@ -157,11 +202,47 @@ export default function ClubLoginPage() {
                     <span>Bypass Authentication (Demo)</span>
                   </Button>
                 </form>
+                {showResendModal && (
+                  <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
+                    <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full text-center space-y-4">
+                      <h2 className="text-lg font-semibold">Confirm your email</h2>
+                      <p className="text-sm text-gray-600">
+                        You must confirm your email before logging in.
+                      </p>
+                      <Button onClick={handleResendConfirmation} className="w-full">
+                        Resend Confirmation Email
+                      </Button>
+                      <button
+                        className="text-sm text-gray-500 hover:underline mt-2"
+                        onClick={() => setShowResendModal(false)}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {showLoginErrorModal && (
+                  <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
+                    <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full text-center space-y-4">
+                      <h2 className="text-lg font-semibold">Login failed</h2>
+                      <p className="text-sm text-gray-600">
+                        Username and/or password is incorrect. Please try again.
+                      </p>
+                      <Button onClick={() => setShowLoginErrorModal(false)} className="w-full">
+                        Try Again
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
               </CardContent>
               <CardFooter className="flex justify-center border-t pt-6">
                 <p className="text-sm text-gray-500">
                   Don't have an account?{" "}
-                  <Link href="/auth/club/signup" className="text-green-600 hover:underline">
+                  <Link
+                    href="/auth/club/signup"
+                    className="text-green-600 hover:underline"
+                  >
                     Sign up
                   </Link>
                 </p>
@@ -173,9 +254,11 @@ export default function ClubLoginPage() {
 
       <footer className="border-t py-6">
         <Container className="flex justify-center">
-          <p className="text-center text-sm text-gray-500">© 2025 CodeStrikers. All rights reserved.</p>
+          <p className="text-center text-sm text-gray-500">
+            © 2025 CodeStrikers. All rights reserved.
+          </p>
         </Container>
       </footer>
     </div>
-  )
+  );
 }
