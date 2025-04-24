@@ -15,7 +15,7 @@ export default function HomePage() {
       <header className="border-b">
         <Container className="flex h-16 items-center justify-between">
           <div className="flex items-center gap-2 font-bold text-xl">
-            <img src="/logo.png" alt="CodeStrikers Logo" className="h-8 w-8" />
+            <img src="/logo.svg" alt="CodeStrikers Logo" className="h-8 w-8" />
             <span>CodeStrikers</span>
           </div>
           <nav className="hidden md:flex items-center gap-6">
@@ -106,9 +106,14 @@ export default function HomePage() {
                         <p className="text-sm text-gray-600 mb-2">
                           Track your performance, showcase your skills, and get discovered by top clubs.
                         </p>
-                        <Link href="/auth/player">
+                        <Link href="/auth/club/signup">
                           <Button className="w-full" size="sm">
-                            Enter with Code
+                            Login
+                          </Button>
+                        </Link>
+                        <Link href="/auth/player">
+                          <Button  variant="outline" className="w-full" size="sm">
+                            Sign up with Club Code
                           </Button>
                         </Link>
                       </div>

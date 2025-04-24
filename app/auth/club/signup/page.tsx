@@ -48,6 +48,29 @@ export default function ClubSignupPage() {
     );
   };
 
+  const getPasswordStrength = (password: string) => {
+    let strength = 0;
+    if (password.length >= 6) strength++;
+    if (/[A-Z]/.test(password)) strength++;
+    if (/[a-z]/.test(password)) strength++;
+    if (/\d/.test(password)) strength++;
+    if (/[\W_]/.test(password)) strength++;
+    return strength;
+  };
+
+  function getPasswordStrengthText(password: string) {
+    let strength = 0;
+    if (password.length >= 6) strength++;
+    if (/[A-Z]/.test(password)) strength++;
+    if (/[a-z]/.test(password)) strength++;
+    if (/\d/.test(password)) strength++;
+    if (/[\W_]/.test(password)) strength++;
+    if (strength <= 2) return "Weak";
+    if (strength === 3) return "Medium";
+    if (strength >= 4) return "Strong";
+    return "weak";
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -109,19 +132,12 @@ export default function ClubSignupPage() {
     setIsLoading(false);
   };
 
-  function getPasswordStrength(password: string) {
-    if (password.length < 6) return "Weak";
-    if (/[A-Z]/.test(password) && /[0-9]/.test(password)) return "Medium";
-    if (/[^A-Za-z0-9]/.test(password)) return "Strong";
-    return "Medium";
-  }
-
   return (
     <div className="flex flex-col min-h-screen">
       <header className="border-b">
         <Container className="flex h-16 items-center">
           <Link href="/" className="flex items-center gap-2 font-bold text-xl">
-            <img src="/logo.png" alt="CodeStrikers Logo" className="h-8 w-8" />
+            <img src="/logo.svg" alt="CodeStrikers Logo" className="h-8 w-8" />
             <span>CodeStrikers</span>
           </Link>
         </Container>
@@ -185,8 +201,10 @@ export default function ClubSignupPage() {
                         value={password}
                         onChange={(e) => {
                           setPassword(e.target.value);
-                          setPasswordStrength(getPasswordStrength(e.target.value));
-                        }}                      
+                          setPasswordStrength(
+                            getPasswordStrengthText(e.target.value)
+                          );
+                        }}
                       />
                       <Button
                         type="button"
@@ -194,20 +212,45 @@ export default function ClubSignupPage() {
                         size="icon"
                         onClick={() => setShowPassword(!showPassword)}
                       >
-                        {showPassword ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                        {showPassword ? (
+                          <Eye className="h-4 w-4" />
+                        ) : (
+                          <EyeOff className="h-4 w-4" />
+                        )}
                       </Button>
                     </div>
                     {password && (
-                      <p className={`text-sm ${passwordStrength === "Strong"
-                        ? "text-green-600"
-                        : passwordStrength === "Medium"
-                        ? "text-yellow-600"
-                        : "text-red-600"}`}>
+                      <p
+                        className={`text-sm ${
+                          passwordStrength === "Strong"
+                            ? "text-green-600"
+                            : passwordStrength === "Medium"
+                            ? "text-yellow-600"
+                            : "text-red-600"
+                        }`}
+                      >
                         Strength: {passwordStrength}
                       </p>
                     )}
+
+                    {/* Password Strength Bar */}
+                    {password && (
+                      <div className="h-2 w-full rounded bg-gray-200 overflow-hidden">
+                        <div
+                          className={`h-full transition-all duration-300 ${
+                            getPasswordStrength(password) <= 2
+                              ? "bg-red-500 w-1/5"
+                              : getPasswordStrength(password) === 3
+                              ? "bg-yellow-500 w-3/5"
+                              : getPasswordStrength(password) >= 4
+                              ? "bg-green-500 w-full"
+                              : ""
+                          }`}
+                        />
+                      </div>
+                    )}
                     {passwordError && (
-                        <p className="text-sm text-red-500">{passwordError}</p>
+                      <p className="text-sm text-red-500">{passwordError}</p>
                     )}
                   </div>
 
@@ -225,9 +268,15 @@ export default function ClubSignupPage() {
                         type="button"
                         variant="ghost"
                         size="icon"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        onClick={() =>
+                          setShowConfirmPassword(!showConfirmPassword)
+                        }
                       >
-                        {showConfirmPassword ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                        {showConfirmPassword ? (
+                          <Eye className="h-4 w-4" />
+                        ) : (
+                          <EyeOff className="h-4 w-4" />
+                        )}
                       </Button>
                     </div>
                     {confirmPasswordError && (

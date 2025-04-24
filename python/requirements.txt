@@ -1,0 +1,11 @@
+# OpenCV for computer vision functions (e.g. cv2)
+opencv-python>=4.5.0.64
+
+# NumPy for numerical operations on arrays
+numpy>=1.19.5
+
+# Pandas for data manipulation (if used in your script)
+pandas>=1.1.5
+
+# PyTorch (often needed when using a model file, e.g. Tracker)
+torch>=1.8.1

@@ -49,7 +49,7 @@ export default function PlayerDashboardPage() {
             </DropdownMenu>
 
             <Link href="/" className="flex items-center gap-2 font-bold text-xl">
-              <img src="/logo.png" alt="CodeStrikers Logo" className="h-8 w-8" />
+              <img src="/logo.svg" alt="CodeStrikers Logo" className="h-8 w-8" />
               <span>CodeStrikers</span>
             </Link>
           </div>

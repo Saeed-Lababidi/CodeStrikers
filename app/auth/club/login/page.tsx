@@ -29,7 +29,36 @@ export default function ClubLoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [showResendModal, setShowResendModal] = useState(false);
+  const [showNewResendModal, setShowNewResendModal] = useState(false);
   const [showLoginErrorModal, setShowLoginErrorModal] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  useEffect(() => {
+    if (resendCooldown === 0) return;
+
+    const interval = setInterval(() => {
+      setResendCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [resendCooldown]);
+
+  useEffect(() => {
+    const start = localStorage.getItem("resendCooldownStart");
+    if (start) {
+      const secondsPassed = Math.floor((Date.now() - Number(start)) / 1000);
+      const remaining = 180 - secondsPassed;
+      if (remaining > 0) {
+        setResendCooldown(remaining);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     setShowLoginErrorModal(false);
@@ -37,10 +66,10 @@ export default function ClubLoginPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get("signup") === "success") {
-      setShowResendModal(true);
+    if (params.get("signup") === "success" && resendCooldown === 0) {
+      setShowNewResendModal(true);
     }
-  }, []);  
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,11 +106,13 @@ export default function ClubLoginPage() {
   };
 
   const handleResendConfirmation = async () => {
+    if (resendCooldown > 0) return;
+
     const { error } = await supabase.auth.resend({
       type: "signup",
       email,
     });
-  
+
     if (error) {
       toast({
         title: "Error",
@@ -93,10 +124,11 @@ export default function ClubLoginPage() {
         title: "Confirmation sent",
         description: "Check your email to confirm your account.",
       });
-      setShowResendModal(false);
+      setResendCooldown(180);
+      localStorage.setItem("resendCooldownStart", Date.now().toString());
     }
   };
-  
+
   const handleBypass = async () => {
     // Set cookies manually
     document.cookie = `session_id=bypass-${Date.now()};path=/;max-age=${
@@ -123,7 +155,7 @@ export default function ClubLoginPage() {
       <header className="border-b">
         <Container className="flex h-16 items-center">
           <Link href="/" className="flex items-center gap-2 font-bold text-xl">
-            <img src="/logo.png" alt="CodeStrikers Logo" className="h-8 w-8" />
+            <img src="/logo.svg" alt="CodeStrikers Logo" className="h-8 w-8" />
             <span>CodeStrikers</span>
           </Link>
         </Container>
@@ -202,15 +234,58 @@ export default function ClubLoginPage() {
                     <span>Bypass Authentication (Demo)</span>
                   </Button>
                 </form>
+                {showNewResendModal && (
+                  <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
+                    <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full text-center space-y-4">
+                      <h2 className="text-2xl font-semibold">
+                        🎉 One last Step! 🎉
+                      </h2>
+                      <p className="text-lg">
+                        You must confirm your email before logging in.
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        Please check your inbox. If you don't see it, check your
+                        spam folder.
+                      </p>
+                      <Button
+                        onClick={handleResendConfirmation}
+                        className="w-full"
+                        disabled={resendCooldown > 0}
+                      >
+                        {resendCooldown > 0
+                          ? `Resend available in ${resendCooldown}s`
+                          : "Resend Confirmation Email"}
+                      </Button>
+                      <button
+                        className="text-sm text-gray-500 hover:underline mt-2"
+                        onClick={() => setShowNewResendModal(false)}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
                 {showResendModal && (
                   <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
                     <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full text-center space-y-4">
-                      <h2 className="text-lg font-semibold">Confirm your email</h2>
-                      <p className="text-sm text-gray-600">
+                      <h2 className="text-2xl font-semibold">
+                        Confirm your email 😅
+                      </h2>
+                      <p className="text-lg">
                         You must confirm your email before logging in.
                       </p>
-                      <Button onClick={handleResendConfirmation} className="w-full">
-                        Resend Confirmation Email
+                      <p className="text-sm text-gray-600">
+                        Please check your inbox. If you don't see it, check your
+                        spam folder.
+                      </p>
+                      <Button
+                        onClick={handleResendConfirmation}
+                        className="w-full"
+                        disabled={resendCooldown > 0}
+                      >
+                        {resendCooldown > 0
+                          ? `Resend available in ${resendCooldown}s`
+                          : "Resend Confirmation Email"}
                       </Button>
                       <button
                         className="text-sm text-gray-500 hover:underline mt-2"
@@ -228,13 +303,15 @@ export default function ClubLoginPage() {
                       <p className="text-sm text-gray-600">
                         Username and/or password is incorrect. Please try again.
                       </p>
-                      <Button onClick={() => setShowLoginErrorModal(false)} className="w-full">
+                      <Button
+                        onClick={() => setShowLoginErrorModal(false)}
+                        className="w-full"
+                      >
                         Try Again
                       </Button>
                     </div>
                   </div>
                 )}
-
               </CardContent>
               <CardFooter className="flex justify-center border-t pt-6">
                 <p className="text-sm text-gray-500">

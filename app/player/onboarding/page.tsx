@@ -75,7 +75,7 @@ export default function PlayerOnboardingPage() {
       <header className="border-b">
         <Container className="flex h-16 items-center">
           <Link href="/" className="flex items-center gap-2 font-bold text-xl">
-            <img src="/logo.png" alt="CodeStrikers Logo" className="h-8 w-8" />
+            <img src="/logo.svg" alt="CodeStrikers Logo" className="h-8 w-8" />
             <span>CodeStrikers</span>
           </Link>
         </Container>
